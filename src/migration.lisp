@@ -142,8 +142,9 @@ table `table-name`."
                        (crane.sql:drop-column table-name
                                               column-name))
                    (getf diff :deletions))))
-    (reduce #'(lambda (a b) (concatenate 'string a ";" b))
-            (append alterations additions deletions))))
+    (crane.transaction:with-transaction ()
+      (iter (for command in (append alterations additions deletions))
+	    (dbi:execute (dbi:prepare conn command))))))
 
 (defun build (table-name)
   (unless (crane.meta:abstractp (find-class table-name))
