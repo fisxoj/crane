@@ -101,6 +101,8 @@ table `table-name`."
 
 (defun migrate (table-class diff)
   (let* ((table-name (crane.meta:table-name table-class))
+	 (conn (crane.connect:get-connection (crane.meta:table-database
+                                              (find-class table-name))))
          (alterations
           (iter (for column in (getf diff :changes))
             (appending
