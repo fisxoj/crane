@@ -21,6 +21,7 @@
                  (:file "connect")
                  (:file "sql")
                  (:file "meta")
+		 (:file "introspection")
                  (:file "query")
                  (:file "migration")
                  (:file "table")

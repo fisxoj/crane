@@ -148,7 +148,8 @@ table `table-name`."
 
 (defun build (table-name)
   (unless (crane.meta:abstractp (find-class table-name))
-    (if (migration-history-p table-name)
+    (if (and (migration-history-p table-name)
+	     (crane.introspection:table-exists-p table-name))
         (let ((diff (diff-digest
                      (get-last-migration table-name)
                      (digest (find-class table-name)))))
