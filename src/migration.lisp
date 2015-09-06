@@ -78,7 +78,7 @@ table `table-name`."
 
 (defparameter +create-table-format-string+
   ;; Are you ready for this one?
-  "CREATE TABLE ~A (~{    ~A~#[~:;, ~]~}~A~{    ~A~#[~:;, ~]~});~{~A;~}"
+  "CREATE TABLE ~A (~{    ~A~#[~:;, ~]~}~A~{    ~A~#[~:;, ~]~});"
   ;; Is that clear?
   )
 
@@ -92,12 +92,16 @@ table `table-name`."
                    (crane.sql:sqlize (table-name (find-class table-name)))
                    (getf constraints :definition)
                    (if (getf constraints :internal) "," "")
-                   (getf constraints :internal)
-                   (getf constraints :external)))
+                   (getf constraints :internal)))
          (conn (crane.connect:get-connection (crane.meta:table-database
                                               (find-class table-name)))))
     (format t "~&Query: ~A~&" query)
-    (dbi:execute (dbi:prepare conn query))))
+
+    ;; Execute external constraints separately, but inside a transaction
+    (crane.transaction:with-transaction ()
+      (dbi:execute (dbi:prepare conn query))
+      (iter (for ext-con in (getf constraints :external))
+	    (dbi:execute (dbi:prepare conn ext-con))))))
 
 (defun migrate (table-class diff)
   (let* ((table-name (crane.meta:table-name table-class))
@@ -143,15 +147,15 @@ table `table-name`."
                                               column-name))
                    (getf diff :deletions))))
     (crane.transaction:with-transaction ()
-      (iter (for command in (append alterations additions deletions))
+      (iter (for command in (remove-if #'null (append alterations additions deletions)))
 	    (dbi:execute (dbi:prepare conn command))))))
 
 (defun build (table-name)
   (unless (crane.meta:abstractp (find-class table-name))
-    (if (and (migration-history-p table-name)
-	     (crane.introspection:table-exists-p table-name))
+    (if (migration-history-p table-name)
         (let ((diff (diff-digest
-                     (get-last-migration table-name)
+		     (crane.introspection:table-definition table-name)
+                     ;(get-last-migration table-name)
                      (digest (find-class table-name)))))
           (if (or (getf diff :additions)
                   (getf diff :deletions)

@@ -1,7 +1,8 @@
 (defpackage crane.introspection
   (:use :cl :sxql :anaphora)
 
-  (:export :table-exists-p)
+  (:export :table-exists-p
+	   :table-definition)
 
   (:import-from :crane.types
 		:text)

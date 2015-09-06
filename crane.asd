@@ -21,15 +21,15 @@
                  (:file "connect")
                  (:file "sql")
                  (:file "meta")
+                 (:file "types")
 		 (:file "introspection")
                  (:file "query")
+                 (:file "transaction")
                  (:file "migration")
                  (:file "table")
-                 (:file "types")
                  (:file "inflate-deflate")
                  (:file "interface")
                  (:file "fixture")
-                 (:file "transaction")
                  (:file "crane"))))
   :description "An ORM for Common Lisp."
   :long-description
