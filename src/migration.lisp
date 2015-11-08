@@ -109,16 +109,16 @@ table `table-name`."
                                               (find-class table-name))))
          (alterations
           (iter (for column in (getf diff :changes))
-            (appending
-             (iter (for type in (getf column :diff) by #'cddr)
-               (collecting
+		(appending
+		 (iter (for type in (getf column :diff) by #'cddr)
+		       (collecting
                 (crane.sql:alter-constraint
-                  table-name
-                  (getf column :name)
-                  type
-                  (cadr (getf (getf column :diff) type))))))))
+		 table-name
+		 (getf column :name)
+		 type
+		 (cadr (getf (getf column :diff) type))))))))
          (new-columns
-           (mapcar #'(lambda (column)
+	  (mapcar #'(lambda (column)
                        (crane.sql:define-column
                            table-name
                            column
@@ -126,29 +126,32 @@ table `table-name`."
                           (find-class table-name))))
                    (getf diff :additions)))
          (additions
-           (iter (for def in new-columns)
-             (appending
-              (cons (format nil "ALTER TABLE ~A ADD COLUMN ~A"
-                            (crane.sql:sqlize table-name) (getf def :definition))
-                    (append
-                     (mapcar #'(lambda (internal-constraint)
-                                 (crane.sql:add-constraint
-                                  table-name
-                                  internal-constraint))
+	  (iter (for def in new-columns)
+		(appending
+		 (cons (format nil "ALTER TABLE ~A ADD COLUMN ~A"
+			       (crane.sql:sqlize table-name) (getf def :definition))
+		       (append
+			(mapcar #'(lambda (internal-constraint)
+				    (crane.sql:add-constraint
+				     table-name
+				     internal-constraint))
                              (getf def :internal))
-                     (mapcar #'(lambda (external-constraint)
-                                 (crane.sql:add-constraint
-                                  table-name
-                                  external-constraint))
-                             (getf def :external)))))))
+			(mapcar #'(lambda (external-constraint)
+				    (crane.sql:add-constraint
+				     table-name
+				     external-constraint))
+				(getf def :external)))))))
          (deletions
-           (mapcar #'(lambda (column-name)
-                       (crane.sql:drop-column table-name
-                                              column-name))
-                   (getf diff :deletions))))
-    (crane.transaction:with-transaction ()
-      (iter (for command in (remove-if #'null (append alterations additions deletions)))
-	    (dbi:execute (dbi:prepare conn command))))))
+	  (mapcar #'(lambda (column-name)
+		      (crane.sql:drop-column table-name
+					     column-name))
+		  (getf diff :deletions))))
+    (handler-case
+	(crane.transaction:with-transaction ()
+	  (iter (for command in (remove-if #'null (append alterations additions deletions)))
+		(dbi:execute (dbi:prepare conn command))))
+      (dbi.error:<dbi-programming-error> (e)
+	(format t "An error has occurred migrating the db: ~a" e)))))
 
 (defun build (table-name)
   (unless (crane.meta:abstractp (find-class table-name))
