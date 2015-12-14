@@ -66,7 +66,7 @@ symbols, table options are keywords."
   "Define a table."
   (destructuring-bind (slots options)
       (separate-slots-and-options slots-and-options)
-    `(progn
+    `(prog1
        (defclass ,name ,(if superclasses superclasses `(crane.table:<table>))
          ,(append
            (when (or
